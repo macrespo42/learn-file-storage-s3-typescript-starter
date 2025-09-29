@@ -4,6 +4,7 @@ import { getVideo, updateVideo } from "../db/videos";
 import type { ApiConfig } from "../config";
 import type { BunRequest } from "bun";
 import { BadRequestError, UserForbiddenError } from "./errors";
+import path from "path";
 
 export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
   const { videoId } = req.params as { videoId?: string };
@@ -27,13 +28,15 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     const buff = await thumbnail.arrayBuffer();
     const data = Buffer.from(buff).toString("base64");
 
-    const dataURL = `data:${mediaType};base64,${data}`;
-
     const video = getVideo(cfg.db, videoId);
     if (video?.userID !== userID) {
       throw new UserForbiddenError("Your not the video author");
     }
-    video.thumbnailURL = dataURL;
+
+    const dataPath = path.join(cfg.assetsRoot, `${video.id}.${mediaType}`);
+    await Bun.write(dataPath, data);
+
+    video.thumbnailURL = `http://localhost:${cfg.port}/assets/${video.id}.${mediaType}`;
     updateVideo(cfg.db, video);
     respondWithJSON(200, video);
   } else {
