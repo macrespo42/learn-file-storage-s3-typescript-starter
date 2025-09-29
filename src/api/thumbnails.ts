@@ -25,6 +25,9 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
       throw new BadRequestError("Max upload size hitted");
     }
     const mediaType = thumbnail.type;
+    if (!["image/jpeg", "image/png"].includes(mediaType)) {
+      throw new BadRequestError(`Can't upload ${mediaType} files`);
+    }
     const buff = await thumbnail.arrayBuffer();
     const data = Buffer.from(buff).toString("base64");
 
