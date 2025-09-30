@@ -28,8 +28,8 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     if (!["image/jpeg", "image/png"].includes(mediaType)) {
       throw new BadRequestError(`Can't upload ${mediaType} files`);
     }
-    const buff = await thumbnail.arrayBuffer();
-    const data = Buffer.from(buff).toString("base64");
+    const buffer = await thumbnail.arrayBuffer();
+    const data = Buffer.from(buffer).toString("base64");
 
     const video = getVideo(cfg.db, videoId);
     if (video?.userID !== userID) {
