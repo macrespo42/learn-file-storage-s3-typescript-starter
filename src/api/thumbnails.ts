@@ -6,6 +6,8 @@ import type { BunRequest } from "bun";
 import { BadRequestError, UserForbiddenError } from "./errors";
 import path from "path";
 
+import { randomBytes } from "crypto";
+
 export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
   const { videoId } = req.params as { videoId?: string };
   if (!videoId) {
@@ -28,6 +30,7 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     if (!["image/jpeg", "image/png"].includes(mediaType)) {
       throw new BadRequestError(`Can't upload ${mediaType} files`);
     }
+
     const buffer = await thumbnail.arrayBuffer();
     const data = Buffer.from(buffer).toString("base64");
 
@@ -36,14 +39,19 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
       throw new UserForbiddenError("Your not the video author");
     }
 
-    const dataPath = path.join(cfg.assetsRoot, `${video.id}.${mediaType}`);
+    let extension = "jpg";
+    if (mediaType === "image/png") {
+      extension = "png";
+    }
+    const uuid = randomBytes(32).toString("base64url");
+    const dataPath = path.join(cfg.assetsRoot, `${uuid}.${extension}`);
     await Bun.write(dataPath, data);
 
-    video.thumbnailURL = `http://localhost:${cfg.port}/assets/${video.id}.${mediaType}`;
+    video.thumbnailURL = `http://localhost:${cfg.port}/assets/${uuid}.${extension}`;
     updateVideo(cfg.db, video);
     respondWithJSON(200, video);
   } else {
-    throw new BadRequestError("Invalide thumbnail");
+    throw new BadRequestError("Invalid thumbnail");
   }
 
   return respondWithJSON(200, null);
